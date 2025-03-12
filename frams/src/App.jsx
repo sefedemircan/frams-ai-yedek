@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, AppShell } from '@mantine/core';
+import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, useMantineColorScheme, ActionIcon } from '@mantine/core';
+import { IconSun, IconMoon } from '@tabler/icons-react';
 import EmergencyForm from './components/EmergencyForm';
 import EmergencyMap from './components/EmergencyMap';
 import ResultsPanel from './components/ResultsPanel';
@@ -13,6 +14,11 @@ function App() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
+
+  const toggleColorScheme = () => {
+    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+  };
 
   useEffect(() => {
     // Depoları ve araçları yükle
@@ -68,9 +74,23 @@ function App() {
 
   return (
     <div>
-      <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
+      <div style={{ 
+        padding: '1rem', 
+        backgroundColor: colorScheme === 'dark' ? '#1A1B1E' : '#f8f9fa', 
+        borderBottom: `1px solid ${colorScheme === 'dark' ? '#2C2E33' : '#dee2e6'}`,
+        color: colorScheme === 'dark' ? 'white' : 'black'
+      }}>
         <Group position="apart">
           <Title order={1}>Frams - Yangın Müdahale Sistemi</Title>
+          <ActionIcon 
+            variant="outline" 
+            color={colorScheme === 'dark' ? 'yellow' : 'blue'} 
+            onClick={toggleColorScheme} 
+            title={colorScheme === 'dark' ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
+            size="lg"
+          >
+            {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+          </ActionIcon>
         </Group>
       </div>
       

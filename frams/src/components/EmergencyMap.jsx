@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { Paper, Title, Text, Badge, Group } from '@mantine/core';
+import { Paper, Title, Text, Badge, Group, useMantineColorScheme } from '@mantine/core';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
@@ -61,6 +61,9 @@ const MapBoundsUpdater = ({ bounds }) => {
 };
 
 const EmergencyMap = ({ emergencies, routes, depots }) => {
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
+  
   const [center, setCenter] = useState([37.7640, 30.5458]); // Varsayılan merkez
   const [mapBounds, setMapBounds] = useState(null);
   const [routeGeometries, setRouteGeometries] = useState({});
@@ -209,8 +212,16 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
     return vehicleType === 'ground' ? '#FF5733' : '#3366FF';
   };
 
+  // Karanlık tema için harita katmanı
+  const getTileLayer = () => {
+    if (isDark) {
+      return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    }
+    return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  };
+
   return (
-    <Paper p="md" withBorder style={{ height: '600px' }}>
+    <Paper p="md" withBorder>
       <Title order={3} mb="md">Acil Durum Haritası</Title>
       <MapContainer 
         center={center} 
@@ -219,8 +230,11 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
         ref={mapRef}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url={getTileLayer()}
+          attribution={isDark 
+            ? '&copy; <a href="https://carto.com/attributions">CARTO</a>' 
+            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }
         />
         
         {mapBounds && <MapBoundsUpdater bounds={mapBounds} />}

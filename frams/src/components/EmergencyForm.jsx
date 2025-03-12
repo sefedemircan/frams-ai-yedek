@@ -9,11 +9,15 @@ import {
   Paper,
   Slider,
   Stack,
-  Text
+  Text,
+  useMantineColorScheme
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 
 const EmergencyForm = ({ onAddEmergency }) => {
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const form = useForm({
     initialValues: {
       latitude: '',
@@ -64,6 +68,7 @@ const EmergencyForm = ({ onAddEmergency }) => {
               step={0.1}
               label={(value) => value.toFixed(1)}
               {...form.getInputProps('fireIntensity')}
+              color="red"
             />
           </Box>
 
@@ -83,6 +88,7 @@ const EmergencyForm = ({ onAddEmergency }) => {
               step={0.1}
               label={(value) => value.toFixed(1)}
               {...form.getInputProps('terrainDifficulty')}
+              color="orange"
             />
           </Box>
 
@@ -115,7 +121,7 @@ const EmergencyForm = ({ onAddEmergency }) => {
           />
 
           <Group position="right" mt="md">
-            <Button type="submit">Yangın Noktası Ekle</Button>
+            <Button type="submit" color="blue">Yangın Noktası Ekle</Button>
           </Group>
         </Stack>
       </form>

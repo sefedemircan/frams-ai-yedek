@@ -1,6 +1,9 @@
-import { Paper, Title, Text, Group, Badge, Accordion, List, Divider } from '@mantine/core';
+import { Paper, Title, Text, Group, Badge, Accordion, List, Divider, useMantineColorScheme } from '@mantine/core';
 
 const ResultsPanel = ({ results, vehicles }) => {
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === 'dark';
+
   if (!results || !results.routes || Object.keys(results.routes).length === 0) {
     return (
       <Paper p="md" withBorder>
