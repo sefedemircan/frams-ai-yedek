@@ -95,7 +95,7 @@ function App() {
       </div>
       
       <Container size="xl" py="xl">
-        <LoadingOverlay visible={loading} overlayBlur={2} />
+        <LoadingOverlay visible={loading} overlayProps={{ radius: "sm", blur: 2 }}/>
         
         {error && (
           <Alert color="red" title="Hata" mb="md" withCloseButton onClose={() => setError(null)}>

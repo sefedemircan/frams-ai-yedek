@@ -12,24 +12,50 @@ CORS(app)
 
 # Depoları tanımla
 DEPOTS = {
-    1: {"lat": 37.7640, "lon": 30.5458, "name": "İstanbul Deposu"},
-    2: {"lat": 37.6255, "lon": 30.5362, "name": "Ankara Deposu"},
-    3: {"lat": 38.4237, "lon": 30.5622, "name": "İzmir Deposu"}
+    1: {"lat": 37.7640, "lon": 30.5458, "name": "Isparta Deposu"},
+    2: {"lat": 36.8969, "lon": 30.7133, "name": "Antalya Deposu"},
+    3: {"lat": 38.4237, "lon": 30.5622, "name": "Afyonkarahisar Deposu"},
+    4: {"lat": 38.4333, "lon": 27.1511, "name": "İzmir Deposu"},
+    5: {"lat": 40.1885, "lon": 29.0610, "name": "Bursa Deposu"},
+    6: {"lat": 40.7731, "lon": 30.3948, "name": "Sakarya Deposu"},
+    7: {"lat": 39.9334, "lon": 32.8597, "name": "Ankara Deposu"},
+    8: {"lat": 39.7667, "lon": 30.5256, "name": "Eskişehir Deposu"},
+    
 }
 
 # Araç konfigürasyonları
 VEHICLE_CONFIGS = {
-    1: [  # İstanbul deposu
+    1: [  # Isparta deposu
         {"id": 1, "type": VehicleType.GROUND, "capacity": 5000, "speed": 60, "range": 100},
         {"id": 2, "type": VehicleType.AERIAL, "capacity": 3000, "speed": 180, "range": 500}
     ],
-    2: [  # Ankara deposu
+    2: [  # Antalya deposu
         {"id": 3, "type": VehicleType.GROUND, "capacity": 4000, "speed": 55, "range": 80},
         {"id": 4, "type": VehicleType.AERIAL, "capacity": 3500, "speed": 170, "range": 450}
     ],
-    3: [  # İzmir deposu
+    3: [  # Afyonkarahisar deposu
         {"id": 5, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
         {"id": 6, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
+    ],
+    4: [  # İzmir deposu
+        {"id": 7, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
+        {"id": 8, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
+    ],
+    5: [  # Bursa deposu
+        {"id": 9, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
+        {"id": 10, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
+    ],
+    6: [  # Sakarya deposu
+        {"id": 11, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
+        {"id": 12, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
+    ],
+    7: [  # Ankara deposu
+        {"id": 13, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
+        {"id": 14, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
+    ],
+    8: [  # Eskişehir deposu
+        {"id": 15, "type": VehicleType.GROUND, "capacity": 4500, "speed": 58, "range": 90},
+        {"id": 16, "type": VehicleType.AERIAL, "capacity": 3200, "speed": 175, "range": 480}
     ]
 }
 
