@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { Paper, Title, Text, Badge, Group, useMantineColorScheme } from '@mantine/core';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle } from 'react-leaflet';
+import { Paper, Title, Text, Badge, Group, useMantineColorScheme, Button, Switch, Tooltip } from '@mantine/core';
+import { IconNavigation, IconNavigationOff } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
@@ -27,6 +28,7 @@ const createCustomIcon = (color) => {
 
 const depotIcon = createCustomIcon('green');
 const fireIcon = createCustomIcon('red');
+const userIcon = createCustomIcon('blue');
 
 // OSRM ile rota geometrisi alma
 const getOsrmRouteGeometry = async (startLat, startLon, endLat, endLon) => {
@@ -60,6 +62,157 @@ const MapBoundsUpdater = ({ bounds }) => {
   return null;
 };
 
+// GPS takibi için bileşen
+const LocationMarker = ({ followLocation, onAccuracyUpdate }) => {
+  const [position, setPosition] = useState(null);
+  const [accuracy, setAccuracy] = useState(0);
+  const [heading, setHeading] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [positionHistory, setPositionHistory] = useState([]);
+  const [filteredPosition, setFilteredPosition] = useState(null);
+  
+  const map = useMap();
+
+  // Konum takibi
+  useEffect(() => {
+    if (!followLocation) return;
+
+    let watchId = null;
+
+    const success = (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const acc = position.coords.accuracy;
+      const hdg = position.coords.heading;
+      
+      // Konum geçmişini güncelle (son 5 konumu sakla)
+      const newPosition = { lat, lng, acc, timestamp: Date.now() };
+      setPositionHistory(prev => {
+        const updated = [...prev, newPosition].slice(-5);
+        return updated;
+      });
+      
+      setPosition([lat, lng]);
+      setAccuracy(acc);
+      if (hdg !== null) setHeading(hdg);
+      setLocationError(null);
+
+      // Haritayı konum etrafında merkeze al
+      if (followLocation && map) {
+        map.setView([lat, lng], map.getZoom());
+      }
+
+      // Konum doğruluğunu güncellemek için callback
+      if (onAccuracyUpdate) {
+        onAccuracyUpdate(acc);
+      }
+    };
+
+    const error = (err) => {
+      console.error('Konum alınamadı:', err);
+      setLocationError(err.message);
+    };
+
+    const options = {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 15000
+    };
+
+    // Konum izlemeyi başlat
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(success, error, options);
+    } else {
+      setLocationError('Tarayıcınız konum hizmetlerini desteklemiyor.');
+    }
+
+    // Temizlik fonksiyonu
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [followLocation, map, onAccuracyUpdate]);
+
+  // Konum verilerini filtrele ve iyileştir
+  useEffect(() => {
+    // En az 3 konum kaydı olduğunda filtreleme yap
+    if (positionHistory.length >= 3) {
+      // Sadece belirli bir doğruluk seviyesinin altındaki konumları kullan
+      const filteredPositions = positionHistory.filter(pos => pos.acc < 100);
+      
+      if (filteredPositions.length >= 2) {
+        // En son konumları ağırlıklı olarak hesapla (son konum daha önemli)
+        let totalWeight = 0;
+        let weightedLat = 0;
+        let weightedLng = 0;
+        
+        filteredPositions.forEach((pos, index) => {
+          // Doğruluk değeri daha düşük olan konumlara daha yüksek ağırlık ver
+          const accuracyWeight = 1 / (pos.acc || 1);
+          // Daha yeni konumlara daha yüksek ağırlık ver
+          const recencyWeight = (index + 1) / filteredPositions.length;
+          // Toplam ağırlık
+          const weight = accuracyWeight * recencyWeight;
+          
+          weightedLat += pos.lat * weight;
+          weightedLng += pos.lng * weight;
+          totalWeight += weight;
+        });
+        
+        if (totalWeight > 0) {
+          const avgLat = weightedLat / totalWeight;
+          const avgLng = weightedLng / totalWeight;
+          
+          // Ortalama doğruluk değerini hesapla (en iyiden alınır)
+          const bestAccuracy = Math.min(...filteredPositions.map(pos => pos.acc));
+          
+          setFilteredPosition([avgLat, avgLng]);
+          
+          // Filtrelenmiş konum varsa ve doğruluk yeterince iyiyse, haritayı güncelle
+          if (followLocation && map && bestAccuracy < 50) {
+            map.setView([avgLat, avgLng], map.getZoom());
+          }
+        }
+      }
+    }
+  }, [positionHistory, followLocation, map]);
+
+  // Kullanılacak konum bilgisini belirle (ham veya filtrelenmiş)
+  const displayPosition = (filteredPosition && positionHistory.length >= 3) ? filteredPosition : position;
+  const displayAccuracy = position ? accuracy : 0;
+
+  return displayPosition ? (
+    <>
+      <Marker position={displayPosition} icon={userIcon}>
+        <Popup>
+          <Text weight={700}>Konumunuz</Text>
+          <Text size="sm">Koordinatlar: {displayPosition[0].toFixed(6)}, {displayPosition[1].toFixed(6)}</Text>
+          <Text size="sm">Hassasiyet: ±{Math.round(displayAccuracy)} m</Text>
+          {heading !== null && <Text size="sm">Yön: {Math.round(heading)}°</Text>}
+          {filteredPosition && positionHistory.length >= 3 && (
+            <Text size="sm" color="green">İyileştirilmiş konum aktif</Text>
+          )}
+        </Popup>
+      </Marker>
+      <Circle 
+        center={displayPosition} 
+        radius={displayAccuracy} 
+        pathOptions={{ 
+          color: displayAccuracy < 20 ? 'green' : displayAccuracy < 50 ? 'orange' : 'red',
+          fillColor: displayAccuracy < 20 ? 'green' : displayAccuracy < 50 ? 'orange' : 'red', 
+          fillOpacity: 0.1,
+          weight: 2
+        }}
+      />
+    </>
+  ) : locationError ? (
+    <Popup position={map.getCenter()} closeButton={false}>
+      <Text color="red">{locationError}</Text>
+    </Popup>
+  ) : null;
+};
+
 const EmergencyMap = ({ emergencies, routes, depots }) => {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
@@ -67,6 +220,8 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
   const [center, setCenter] = useState([37.7640, 30.5458]); // Varsayılan merkez
   const [mapBounds, setMapBounds] = useState(null);
   const [routeGeometries, setRouteGeometries] = useState({});
+  const [followLocation, setFollowLocation] = useState(false);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -220,9 +375,131 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
     return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   };
 
+  // Kullanıcının konumuna git
+  const handleGetLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          
+          // Doğruluk oranına göre zoom seviyesini ayarla
+          let zoomLevel = 18; // Varsayılan yüksek zoom seviyesi
+          
+          if (accuracy > 100) {
+            zoomLevel = 14; // Düşük doğruluk için daha geniş görünüm
+          } else if (accuracy > 50) {
+            zoomLevel = 16; // Orta doğruluk için orta seviye zoom
+          }
+          
+          if (mapRef.current) {
+            const map = mapRef.current;
+            
+            // Önce konuma odaklan
+            map.setView([latitude, longitude], zoomLevel);
+            
+            // Doğruluk durumunu göster
+            if (accuracy > 100) {
+              alert(`Konum doğruluğu düşük (±${Math.round(accuracy)} metre). Daha iyi sonuçlar için açık alanda olduğunuzdan emin olun.`);
+            }
+          }
+        },
+        (error) => {
+          console.error('Konum alınamadı:', error);
+          let errorMsg = 'Konumunuz alınamadı. ';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg += 'Konum iznini reddettiniz. Lütfen tarayıcı ayarlarından konum iznini etkinleştirin.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg += 'Konum bilgisi mevcut değil. Lütfen cihazınızın GPS özelliğinin açık olduğundan emin olun.';
+              break;
+            case error.TIMEOUT:
+              errorMsg += 'Konum alınırken zaman aşımı oluştu. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.';
+              break;
+            default:
+              errorMsg += 'Bilinmeyen bir hata oluştu.';
+          }
+          
+          alert(errorMsg);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      alert('Tarayıcınız konum hizmetlerini desteklemiyor.');
+    }
+  };
+
+  // Konum takibini aç/kapa
+  const toggleLocationTracking = () => {
+    setFollowLocation(!followLocation);
+    
+    // Konum takibi kapatıldığında doğruluk göstergesini de temizle
+    if (followLocation) {
+      setLocationAccuracy(null);
+    }
+  };
+
+  // Konum doğruluğunu güncellemek için callback
+  const handleAccuracyUpdate = (accuracy) => {
+    setLocationAccuracy(accuracy);
+  };
+
+  // Doğruluk metni için stil ve renk
+  const getAccuracyStyle = (accuracy) => {
+    if (!accuracy) return { color: 'gray', text: 'Konum alınmadı' };
+    
+    if (accuracy < 20) {
+      return { color: 'green', text: `Yüksek doğruluk (±${Math.round(accuracy)}m)` };
+    } else if (accuracy < 50) {
+      return { color: 'orange', text: `Orta doğruluk (±${Math.round(accuracy)}m)` };
+    } else {
+      return { color: 'red', text: `Düşük doğruluk (±${Math.round(accuracy)}m)` };
+    }
+  };
+  
+  const accuracyStyle = getAccuracyStyle(locationAccuracy);
+
   return (
     <Paper p="md" withBorder>
-      <Title order={3} mb="md">Acil Durum Haritası</Title>
+      <Group position="apart" mb="md">
+        <Group>
+          <Title order={3}>Acil Durum Haritası</Title>
+          {locationAccuracy !== null && (
+            <Badge 
+              color={accuracyStyle.color} 
+              variant="light"
+              size="lg"
+            >
+              {accuracyStyle.text}
+            </Badge>
+          )}
+        </Group>
+        <Group>
+          <Tooltip label={followLocation ? "Konum takibini kapat" : "Konum takibini aç"}>
+            <Switch 
+              checked={followLocation}
+              onChange={toggleLocationTracking}
+              size="md"
+              onLabel={<IconNavigation size={16} />}
+              offLabel={<IconNavigationOff size={16} />}
+            />
+          </Tooltip>
+          <Button 
+            leftSection={<IconNavigation size={16} />} 
+            onClick={handleGetLocation}
+            size="sm"
+            variant="outline"
+          >
+            Konumuma Git
+          </Button>
+        </Group>
+      </Group>
+      
       <MapContainer 
         center={center} 
         zoom={10} 
@@ -238,6 +515,12 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
         />
         
         {mapBounds && <MapBoundsUpdater bounds={mapBounds} />}
+        
+        {/* GPS konumunu göster */}
+        <LocationMarker 
+          followLocation={followLocation} 
+          onAccuracyUpdate={handleAccuracyUpdate}
+        />
         
         {/* Depoları göster */}
         {depots.map((depot) => (
