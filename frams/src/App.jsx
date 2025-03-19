@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, useMantineColorScheme, ActionIcon } from '@mantine/core';
-import { IconSun, IconMoon } from '@tabler/icons-react';
+import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, useMantineColorScheme, ActionIcon, Switch, Tooltip } from '@mantine/core';
+import { IconSun, IconMoon, IconRoad } from '@tabler/icons-react';
 import EmergencyForm from './components/EmergencyForm';
 import EmergencyMap from './components/EmergencyMap';
 import ResultsPanel from './components/ResultsPanel';
@@ -14,10 +14,15 @@ function App() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [considerTraffic, setConsiderTraffic] = useState(true);
   const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const toggleColorScheme = () => {
     setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+  };
+
+  const toggleTrafficConsideration = () => {
+    setConsiderTraffic(!considerTraffic);
   };
 
   useEffect(() => {
@@ -56,7 +61,7 @@ function App() {
       setLoading(true);
       setError(null);
       
-      const optimizationResults = await api.optimizeRoutes(emergencies);
+      const optimizationResults = await api.optimizeRoutes(emergencies, considerTraffic);
       setResults(optimizationResults);
     } catch (err) {
       setError('Rota optimizasyonu sırasında bir hata oluştu: ' + err.message);
@@ -82,15 +87,29 @@ function App() {
       }}>
         <Group position="apart">
           <Title order={1}>Frams - Yangın Müdahale Sistemi</Title>
-          <ActionIcon 
-            variant="outline" 
-            color={colorScheme === 'dark' ? 'yellow' : 'blue'} 
-            onClick={toggleColorScheme} 
-            title={colorScheme === 'dark' ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
-            size="lg"
-          >
-            {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
-          </ActionIcon>
+          <Group>
+            <Tooltip label={considerTraffic ? 'Trafik verilerini dikkate alıyor' : 'Trafik verileri dikkate alınmıyor'}>
+              <Switch
+                checked={considerTraffic}
+                onChange={toggleTrafficConsideration}
+                label="Trafik Verisi Kullan"
+                labelPosition="left"
+                size="md"
+                color="orange"
+                onLabel={<IconRoad size={16} />}
+                offLabel={<IconRoad size={16} />}
+              />
+            </Tooltip>
+            <ActionIcon 
+              variant="outline" 
+              color={colorScheme === 'dark' ? 'yellow' : 'blue'} 
+              onClick={toggleColorScheme} 
+              title={colorScheme === 'dark' ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
+              size="lg"
+            >
+              {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </ActionIcon>
+          </Group>
         </Group>
       </div>
       

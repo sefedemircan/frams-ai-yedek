@@ -26,9 +26,12 @@ const api = {
   },
 
   // Rota optimizasyonu yap
-  optimizeRoutes: async (emergencies) => {
+  optimizeRoutes: async (emergencies, considerTraffic = true) => {
     try {
-      const response = await axios.post(`${API_URL}/optimize`, { emergencies });
+      const response = await axios.post(`${API_URL}/optimize`, { 
+        emergencies,
+        considerTraffic 
+      });
       return response.data;
     } catch (error) {
       console.error('Rota optimizasyonu yapılırken hata oluştu:', error);

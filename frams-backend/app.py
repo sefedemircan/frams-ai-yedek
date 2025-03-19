@@ -134,6 +134,9 @@ def optimize_routes():
         data = request.json
         emergencies_data = data.get('emergencies', [])
         
+        # Trafik bilgisini kullanma seçeneği
+        consider_traffic = data.get('considerTraffic', True)
+        
         # Yangın noktalarını oluştur
         emergencies = []
         for i, emergency_data in enumerate(emergencies_data):
@@ -163,7 +166,8 @@ def optimize_routes():
             population_size=50,
             generations=100,
             crossover_rate=0.9,
-            mutation_rate=0.35
+            mutation_rate=0.35,
+            consider_traffic=consider_traffic
         )
         
         # Rotaları optimize et
@@ -176,7 +180,8 @@ def optimize_routes():
             "stats": {
                 "totalEmergencies": len(emergencies),
                 "assignedEmergencies": 0,
-                "unassignedEmergencies": 0
+                "unassignedEmergencies": 0,
+                "trafficConsidered": consider_traffic
             }
         }
         

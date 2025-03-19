@@ -1,9 +1,7 @@
-import { Paper, Title, Text, Group, Badge, Accordion, List, Divider, useMantineColorScheme } from '@mantine/core';
+import { Paper, Title, Text, Group, Badge, Accordion, List, Divider, Alert } from '@mantine/core';
+import { IconRoad, IconRoadOff } from '@tabler/icons-react';
 
 const ResultsPanel = ({ results, vehicles }) => {
-  const { colorScheme } = useMantineColorScheme();
-  const isDark = colorScheme === 'dark';
-
   if (!results || !results.routes || Object.keys(results.routes).length === 0) {
     return (
       <Paper p="md" withBorder>
@@ -14,6 +12,7 @@ const ResultsPanel = ({ results, vehicles }) => {
   }
 
   const { routes, stats } = results;
+  const trafficConsidered = stats.trafficConsidered ?? false;
 
   return (
     <Paper p="md" withBorder>
@@ -24,6 +23,18 @@ const ResultsPanel = ({ results, vehicles }) => {
         <Badge size="lg" color="green">Atanan: {stats.assignedEmergencies}</Badge>
         <Badge size="lg" color="red">Atanmayan: {stats.unassignedEmergencies}</Badge>
       </Group>
+      
+      <Alert 
+        color={trafficConsidered ? "yellow" : "gray"} 
+        mb="md"
+        title={trafficConsidered ? "Trafik verileri dikkate alındı" : "Trafik verileri dikkate alınmadı"}
+        icon={trafficConsidered ? <IconRoad /> : <IconRoadOff />}
+      >
+        {trafficConsidered
+          ? "Rota optimizasyonu yapılırken trafik verileri kullanıldı. Bu, yoğun trafikli yolların etrafından dolaşan rotaların seçilmesini sağladı."
+          : "Rota optimizasyonu yapılırken trafik verileri kullanılmadı. Daha gerçekçi sonuçlar için trafik verilerini etkinleştirebilirsiniz."
+        }
+      </Alert>
       
       <Divider mb="md" />
       

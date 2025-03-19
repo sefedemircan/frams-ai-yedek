@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle, LayersControl } from 'react-leaflet';
 import { Paper, Title, Text, Badge, Group, useMantineColorScheme, Button, Switch, Tooltip } from '@mantine/core';
-import { IconNavigation, IconNavigationOff } from '@tabler/icons-react';
+import { IconNavigation, IconNavigationOff, IconRoad } from '@tabler/icons-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
@@ -222,7 +222,9 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
   const [routeGeometries, setRouteGeometries] = useState({});
   const [followLocation, setFollowLocation] = useState(false);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [showTraffic, setShowTraffic] = useState(false);
   const mapRef = useRef(null);
+  const layersControlRef = useRef(null);
 
   useEffect(() => {
     // Harita sınırlarını hesapla
@@ -367,12 +369,27 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
     return vehicleType === 'ground' ? '#FF5733' : '#3366FF';
   };
 
-  // Karanlık tema için harita katmanı
+  // Harita katmanı URL'si
   const getTileLayer = () => {
     if (isDark) {
       return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
     }
     return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  };
+
+  // Trafik katmanı URL'si
+  const getTrafficTileLayer = () => {
+    // Ücretsiz trafik veri katmanı - OpenTransportMap kullanımı
+    if (isDark) {
+      // Karanlık tema için alternatif trafik katmanı
+      return 'https://tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=6170aad10dfd42a38d4d8c709a536f38';
+    }
+    return 'https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=6170aad10dfd42a38d4d8c709a536f38';
+  };
+
+  // Trafik katmanı açıklama metni
+  const getTrafficAttribution = () => {
+    return '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   };
 
   // Kullanıcının konumuna git
@@ -449,6 +466,39 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
     setLocationAccuracy(accuracy);
   };
 
+  // Trafik görünümünü aç/kapa
+  const toggleTrafficLayer = () => {
+    setShowTraffic(!showTraffic);
+    
+    // Harita referansını kontrol et
+    if (mapRef.current) {
+      // BaseLayer değişimi için doğrudan DOM manipülasyonu (React-Leaflet sınırlamaları nedeniyle)
+      const mapContainer = mapRef.current._container;
+      const layerControls = mapContainer.querySelectorAll('.leaflet-control-layers-selector');
+      
+      if (layerControls && layerControls.length >= 2) {
+        // İlk kontrol standart harita, ikinci kontrol trafik haritası
+        const targetControl = !showTraffic ? layerControls[1] : layerControls[0];
+        if (targetControl && !targetControl.checked) {
+          targetControl.click(); // Katmanı değiştir
+        }
+      }
+    }
+  };
+
+  // MapContainer yüklendikten sonra referans almak için bileşen
+  const MapController = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      if (map && !mapRef.current) {
+        mapRef.current = map;
+      }
+    }, [map]);
+    
+    return null;
+  };
+
   // Doğruluk metni için stil ve renk
   const getAccuracyStyle = (accuracy) => {
     if (!accuracy) return { color: 'gray', text: 'Konum alınmadı' };
@@ -480,6 +530,18 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
           )}
         </Group>
         <Group>
+          <Tooltip label={showTraffic ? "Standart haritaya geç" : "Trafik haritasına geç"}>
+            <Switch 
+              checked={showTraffic}
+              onChange={toggleTrafficLayer}
+              size="md"
+              onLabel={<IconRoad size={16} />}
+              offLabel={<IconRoad size={16} />}
+              color="yellow"
+              label="Trafik"
+              labelPosition="left"
+            />
+          </Tooltip>
           <Tooltip label={followLocation ? "Konum takibini kapat" : "Konum takibini aç"}>
             <Switch 
               checked={followLocation}
@@ -504,15 +566,27 @@ const EmergencyMap = ({ emergencies, routes, depots }) => {
         center={center} 
         zoom={10} 
         style={{ height: '500px', width: '100%' }}
-        ref={mapRef}
       >
-        <TileLayer
-          url={getTileLayer()}
-          attribution={isDark 
-            ? '&copy; <a href="https://carto.com/attributions">CARTO</a>' 
-            : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }
-        />
+        <MapController />
+        
+        <LayersControl position="topright" ref={layersControlRef}>
+          <LayersControl.BaseLayer checked={!showTraffic} name="Standart Harita">
+            <TileLayer
+              url={getTileLayer()}
+              attribution={isDark 
+                ? '&copy; <a href="https://carto.com/attributions">CARTO</a>' 
+                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              }
+            />
+          </LayersControl.BaseLayer>
+          
+          <LayersControl.BaseLayer checked={showTraffic} name="Trafik Haritası">
+            <TileLayer
+              url={getTrafficTileLayer()}
+              attribution={getTrafficAttribution()}
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
         
         {mapBounds && <MapBoundsUpdater bounds={mapBounds} />}
         
