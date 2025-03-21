@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, useMantineColorScheme, ActionIcon, Switch, Tooltip } from '@mantine/core';
+import { Container, Grid, Button, LoadingOverlay, Title, Text, Alert, Group, useMantineColorScheme, ActionIcon, Switch, Tooltip, Paper, Table } from '@mantine/core';
 import { IconSun, IconMoon, IconRoad } from '@tabler/icons-react';
 import EmergencyForm from './components/EmergencyForm';
 import EmergencyMap from './components/EmergencyMap';
@@ -155,9 +155,57 @@ function App() {
             </Group>
             
             {emergencies.length > 0 && (
-              <Text mt="md" align="center">
-                {emergencies.length} yangın noktası eklendi
-              </Text>
+              <>
+                <Text mt="md" align="center">
+                  {emergencies.length} yangın noktası eklendi
+                </Text>
+                
+                <Paper p="md" withBorder mt="md">
+                  <Title order={4} mb="sm">Yangın Noktaları</Title>
+                  <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+                    <Table>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>No</Table.Th>
+                          <Table.Th>Konum</Table.Th>
+                          <Table.Th>Yoğunluk</Table.Th>
+                          <Table.Th>Alan (ha)</Table.Th>
+                          <Table.Th>Arazi Zorluğu</Table.Th>
+                          <Table.Th>Hava Durumu</Table.Th>
+                          <Table.Th>Yol Durumu</Table.Th>
+                          <Table.Th>Su Mesafesi (km)</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {emergencies.map((emergency) => (
+                          <Table.Tr 
+                            key={emergency.id} 
+                            style={{
+                              animation: emergency === emergencies[emergencies.length - 1] ? 
+                                'highlightRow 2s ease-in-out' : 'none'
+                            }}
+                          >
+                            <Table.Td>{emergency.id}</Table.Td>
+                            <Table.Td>{emergency.latitude}, {emergency.longitude}</Table.Td>
+                            <Table.Td>{emergency.fireIntensity}</Table.Td>
+                            <Table.Td>{emergency.areaSize}</Table.Td>
+                            <Table.Td>{emergency.terrainDifficulty}</Table.Td>
+                            <Table.Td>
+                              {emergency.weatherCondition === 'good' ? 'İyi' : 
+                               emergency.weatherCondition === 'moderate' ? 'Orta' : 'Kötü'}
+                            </Table.Td>
+                            <Table.Td>
+                              {emergency.roadCondition === 'good' ? 'İyi' : 
+                               emergency.roadCondition === 'moderate' ? 'Orta' : 'Kötü'}
+                            </Table.Td>
+                            <Table.Td>{emergency.distanceToNearestWater}</Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  </div>
+                </Paper>
+              </>
             )}
           </Grid.Col>
           
